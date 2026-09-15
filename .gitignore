@@ -1,0 +1,8 @@
+venv/
+ml/ml_venv/
+ml/dataset/
+ml/temp/
+__pycache__/
+*.pyc
+.env
+*.log
