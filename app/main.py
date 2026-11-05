@@ -4,6 +4,7 @@ from app.database import Base, engine
 from app import models
 # from fastapi import FastAPI
 from app.routers import disease
+from app.routers.weather import router as weather_router
 
 Base.metadata.create_all(bind=engine)
 
@@ -25,7 +26,7 @@ app.add_middleware(
 )
 
 app.include_router(disease.router)
-
+app.include_router(weather_router)
 @app.get("/")
 def root():
     return {
