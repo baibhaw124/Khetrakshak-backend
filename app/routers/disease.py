@@ -2,6 +2,7 @@ import logging
 import asyncio
 
 from app.services.gemini_guidance import generate_treatment_guidance
+from app.services.product_links import enrich_product_suggestions
 from pathlib import Path
 import uuid
 
@@ -132,7 +133,7 @@ async def analyze_disease(file: UploadFile = File(...)):
             "prevention": treatment["prevention"],
             "treatment_steps": treatment_steps,
             "ai_prevention": ai_prevention,
-            "product_suggestions": product_suggestions,
+            "product_suggestions": enrich_product_suggestions(product_suggestions),
             "ai_caution": ai_caution,
             "ai_guidance_status": ai_guidance_status,
         }
