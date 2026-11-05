@@ -88,6 +88,22 @@ async def analyze_disease(file: UploadFile = File(...)):
         if not is_healthy:
             ai_guidance_status = "fallback"
 
+            # Local product suggestions, independent of Gemini.
+            product_suggestions = [
+                {
+                    "category": "garden gloves",
+                    "purpose": "Protect hands while handling infected leaves.",
+                },
+                {
+                    "category": "pruning shears",
+                    "purpose": "Remove severely infected leaves safely.",
+                },
+                {
+                    "category": "debris collection bags",
+                    "purpose": "Collect affected plant debris for disposal.",
+                },
+            ]
+
             try:
                 guidance = await asyncio.to_thread(
                     generate_treatment_guidance,
@@ -100,43 +116,57 @@ async def analyze_disease(file: UploadFile = File(...)):
                     prevention=treatment["prevention"],
                 )
 
-                treatment_steps = guidance["treatment_steps"]
-                ai_prevention = guidance["prevention"]
-                product_suggestions = guidance["product_suggestions"]
-                ai_caution = guidance["caution"]
+                treatment_steps = (
+                    guidance.get("treatment_steps")
+                    or treatment["recommendations"]
+                )
+
+                ai_prevention = (
+                    guidance.get("prevention")
+                    or treatment["prevention"]
+                )
+
+                gemini_products = guidance.get("product_suggestions") or []
+
+                if gemini_products:
+                    product_suggestions = gemini_products
+
+                ai_caution = guidance.get("caution", "")
                 ai_guidance_status = "available"
 
-            
             except Exception:
                 logging.exception("Gemini treatment guidance failed")
 
-                # Detection remains successful if Gemini is unavailable.
                 ai_caution = (
                     "AI treatment guidance is temporarily unavailable. "
-                    "Use the existing recommendations and consult a local "
-                    "agricultural expert before applying crop-protection products."
+                    "Local recommendations and product search links are "
+                    "provided. Consult a local agricultural expert before "
+                    "applying crop-protection products."
                 )
 
-
         return {
-            "status": "success",
-            "classification": "leaf",
-            "crop": crop,
-            "disease": disease,
-            "confidence": round(confidence, 2),
-            "risk": risk_result["risk"],
-            "risk_score": risk_result["risk_score"],
-            "message": risk_result["message"],
-            "severity": treatment["severity"],
-            "symptoms": treatment["symptoms"],
-            "recommendations": treatment["recommendations"],
-            "prevention": treatment["prevention"],
-            "treatment_steps": treatment_steps,
-            "ai_prevention": ai_prevention,
-            "product_suggestions": enrich_product_suggestions(product_suggestions),
-            "ai_caution": ai_caution,
-            "ai_guidance_status": ai_guidance_status,
-        }
+                    "status": "success",
+                    "classification": "leaf",
+                    "crop": crop,
+                    "disease": disease,
+                    "confidence": round(confidence, 2),
+                    "risk": risk_result["risk"],
+                    "risk_score": risk_result["risk_score"],
+                    "message": risk_result["message"],
+                    "severity": treatment["severity"],
+                    "symptoms": treatment["symptoms"],
+                    "recommendations": treatment["recommendations"],
+                    "prevention": treatment["prevention"],
+                    "treatment_steps": treatment_steps,
+                    "ai_prevention": ai_prevention,
+                    "product_suggestions": enrich_product_suggestions(product_suggestions),
+                    "ai_caution": ai_caution,
+                    "ai_guidance_status": ai_guidance_status,
+                }
+
+    except Exception:
+        logging.exception("Disease analysis failed")
+        raise
 
     finally:
         if image_path.exists():
